@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morse Code Tapper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .tapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .touch-area {
+            width: 200px;
+            height: 200px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+        .output {
+            font-size: 1.5rem;
+        }
+        button {
+            font-size: 1rem;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="tapper">
+        <div class="touch-area" id="touch-area">Tap and hold here</div>
+        <div class="output" id="output"></div>
+        <button id="clear-button">Clear</button>
+    </div>
+
+    <script>
+        const touchArea = document.getElementById('touch-area');
+        const outputDiv = document.getElementById('output');
+        const clearButton = document.getElementById('clear-button');
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        let oscillator;
+        const dotDuration = 150; // Duration of a dot in milliseconds
+        const dashThreshold = dotDuration * 1.5; // Shortened dash threshold for easier dashes
+        let touchStartTime;
+
+        // Function to start playing a tone
+        function startTone(frequency) {
+            stopTone(); // Ensure any previous tone is stopped before starting a new one
+            oscillator = context.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, context.currentTime);
+            oscillator.connect(context.destination);
+            oscillator.start();
+        }
+
+        // Function to stop playing a tone
+        function stopTone() {
+            if (oscillator) {
+                oscillator.stop();
+                oscillator.disconnect();
+                oscillator = null;
+            }
+        }
+
+        // Handle touch start
+        touchArea.addEventListener('touchstart', (event) => {
+            event.preventDefault();
+            touchStartTime = Date.now();
+            startTone(700); // Dot frequency for long-distance Morse
+        });
+
+        // Handle touch end
+        touchArea.addEventListener('touchend', (event) => {
+            event.preventDefault();
+            const touchEndTime = Date.now();
+            const touchDuration = touchEndTime - touchStartTime;
+            stopTone(); // Stop the tone immediately when the touch ends
+
+            // Determine if it's a dot or dash based on duration
+            if (touchDuration < dashThreshold) {
+                outputDiv.textContent += '.';
+                startTone(700); // Short tone for dot
+                setTimeout(stopTone, dotDuration);
+            } else {
+                outputDiv.textContent += '-';
+                startTone(800); // Slightly higher tone for dash
+                setTimeout(stopTone, dotDuration * 3);
+            }
+        });
+
+        // Clear the output
+        clearButton.addEventListener('click', () => {
+            outputDiv.textContent = '';
+        });
+    </script>
+</body>
+</html>
